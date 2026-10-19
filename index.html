@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src https://szsrdgwxrwdzgnblxnnt.supabase.co; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>VYBE — eliminar cuenta</title>
+<style>
+  :root { --bg: #ffffff; --text: #16151a; --text2: #55525e; --line: #d9d7de; --accent: #4b2fc9; --danger: #b3261e; --on-danger: #ffffff; --field: #f4f3f7; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111014; --text: #ecebf0; --text2: #b1aebb; --line: #3a3842; --accent: #c4b5ff; --danger: #ffb4ab; --on-danger: #690005; --field: #1d1c22; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 26px; line-height: 1.25; margin: 8px 0 12px; }
+  h2 { font-size: 18px; margin: 28px 0 8px; }
+  p, li { color: var(--text); }
+  .muted { color: var(--text2); }
+  ul { padding-left: 20px; margin: 8px 0; }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; }
+  nav button { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 8px 14px; min-height: 44px; font: inherit; cursor: pointer; }
+  nav button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  form { display: grid; gap: 12px; margin-top: 12px; }
+  label { display: grid; gap: 4px; font-weight: 600; }
+  input[type=email], input[type=password] { font: inherit; padding: 12px; min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--text); }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; }
+  .check input { width: 22px; height: 22px; margin-top: 2px; }
+  .primary, .danger { font: inherit; font-weight: 600; min-height: 48px; border-radius: 999px; border: 0; padding: 12px 20px; cursor: pointer; }
+  .primary { background: var(--accent); color: var(--bg); }
+  .danger { background: var(--danger); color: var(--on-danger); }
+  button:disabled { opacity: .5; cursor: default; }
+  .status { min-height: 24px; font-weight: 600; }
+  .status.error { color: var(--danger); }
+  .card { border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-top: 12px; }
+  a { color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <nav aria-label="Idioma / Language / Мова">
+    <button type="button" data-lang="es">Español</button>
+    <button type="button" data-lang="en">English</button>
+    <button type="button" data-lang="uk">Українська</button>
+  </nav>
+
+  <h1 data-t="title"></h1>
+  <p data-t="intro"></p>
+
+  <h2 data-t="removedTitle"></h2>
+  <ul>
+    <li data-t="removed1"></li>
+    <li data-t="removed2"></li>
+    <li data-t="removed3"></li>
+    <li data-t="removed4"></li>
+  </ul>
+  <h2 data-t="keptTitle"></h2>
+  <ul>
+    <li data-t="kept1"></li>
+    <li data-t="kept2"></li>
+    <li data-t="kept3"></li>
+    <li data-t="kept4"></li>
+  </ul>
+
+  <h2 data-t="optionApp"></h2>
+  <p data-t="appSteps"></p>
+
+  <h2 data-t="optionWeb"></h2>
+  <div class="card" id="signin-card">
+    <form id="signin" novalidate>
+      <label><span data-t="email"></span><input type="email" id="email" autocomplete="username" required></label>
+      <label><span data-t="password"></span><input type="password" id="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit" id="signin-button" data-t="signIn"></button>
+      <p class="status" id="signin-status" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+  <div class="card" id="confirm-card" hidden>
+    <p><strong data-t="signedInAs"></strong> <span id="who"></span></p>
+    <form id="confirm" novalidate>
+      <label class="check"><input type="checkbox" id="understand"><span data-t="understand"></span></label>
+      <button class="danger" type="submit" id="delete-button" data-t="deleteForever" disabled></button>
+      <p class="status" id="delete-status" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+  <div class="card" id="done-card" hidden>
+    <p class="status" data-t="done" role="status"></p>
+  </div>
+
+  <h2 data-t="optionEmail"></h2>
+  <p><span data-t="emailText"></span> <a id="mail" href="#"></a></p>
+
+  <p class="muted" data-t="privacy"></p>
+</main>
+<script>
+(() => {
+  "use strict";
+  // Публичные значения проекта (адрес и publishable-ключ). Секретных ключей на странице нет и быть не должно.
+  const SUPABASE_URL = "https://szsrdgwxrwdzgnblxnnt.supabase.co";
+  const PUBLISHABLE_KEY = "sb_publishable_MdPzkwvkFCWBbC5DnltwyQ_vHnREhvu";
+  const SUPPORT_EMAIL = "accmusic.support@gmail.com";
+
+  const T = {
+    es: {
+      title: "Eliminar tu cuenta de VYBE",
+      intro: "La cuenta se elimina de inmediato y no se puede deshacer.",
+      removedTitle: "Qué se elimina",
+      removed1: "Tu perfil: foto, nombre, nombre de usuario y descripción.",
+      removed2: "Tus publicaciones, comentarios y playlists personales.",
+      removed3: "Me gusta, seguidores, seguidos, bloqueos y notificaciones.",
+      removed4: "Los archivos que subiste.",
+      keptTitle: "Qué se queda",
+      kept1: "Las respuestas de otras personas a tus comentarios; tu comentario se mostrará como eliminado.",
+      kept2: "Tus fan pages pasan al moderador más antiguo; si no hay moderadores, se archivan.",
+      kept3: "Tu nombre de usuario queda reservado 30 días: nadie podrá ocuparlo.",
+      kept4: "Las denuncias sobre tu contenido se guardan hasta 90 días para la moderación; las de daño a menores, más tiempo.",
+      optionApp: "Opción 1: en la aplicación",
+      appSteps: "Perfil → menú ☰ → Ajustes → «Eliminar cuenta».",
+      optionWeb: "Opción 2: aquí, con tu correo y contraseña",
+      email: "Correo",
+      password: "Contraseña",
+      signIn: "Entrar",
+      signedInAs: "Cuenta:",
+      understand: "Entiendo que la cuenta se elimina para siempre.",
+      deleteForever: "Eliminar para siempre",
+      done: "Cuenta eliminada. Puedes cerrar esta página.",
+      optionEmail: "Opción 3: por correo",
+      emailText: "Si no puedes entrar, escribe desde el correo de tu cuenta con el asunto «Eliminar cuenta» a",
+      privacy: "Esta página no guarda nada: el correo y la contraseña se envían solo a VYBE para confirmar que la cuenta es tuya.",
+      errWrong: "Correo o contraseña incorrectos.",
+      errRate: "Demasiados intentos. Prueba más tarde.",
+      errNetwork: "Sin conexión. Prueba de nuevo.",
+      errUnknown: "Algo salió mal. Prueba más tarde o escríbenos por correo.",
+      errEmpty: "Escribe tu correo y tu contraseña.",
+      working: "Un momento…",
+    },
+    en: {
+      title: "Delete your VYBE account",
+      intro: "Your account is deleted right away and this can't be undone.",
+      removedTitle: "What gets deleted",
+      removed1: "Your profile: photo, name, username and bio.",
+      removed2: "Your posts, comments and personal playlists.",
+      removed3: "Likes, followers, following, blocks and notifications.",
+      removed4: "Files you uploaded.",
+      keptTitle: "What stays",
+      kept1: "Other people's replies to your comments; your comment will show as deleted.",
+      kept2: "Your fan pages go to the longest-serving moderator; without moderators they are archived.",
+      kept3: "Your username stays reserved for 30 days so no one can take it.",
+      kept4: "Reports about your content are kept for up to 90 days for moderation; child safety reports longer.",
+      optionApp: "Option 1: in the app",
+      appSteps: "Profile → ☰ menu → Settings → “Delete account”.",
+      optionWeb: "Option 2: here, with your email and password",
+      email: "Email",
+      password: "Password",
+      signIn: "Sign in",
+      signedInAs: "Account:",
+      understand: "I understand the account is deleted forever.",
+      deleteForever: "Delete forever",
+      done: "Account deleted. You can close this page.",
+      optionEmail: "Option 3: by email",
+      emailText: "If you can't sign in, write from your account's email with the subject “Delete account” to",
+      privacy: "This page stores nothing: your email and password are sent only to VYBE to confirm the account is yours.",
+      errWrong: "Wrong email or password.",
+      errRate: "Too many attempts. Try again later.",
+      errNetwork: "No connection. Try again.",
+      errUnknown: "Something went wrong. Try later or email us.",
+      errEmpty: "Enter your email and password.",
+      working: "One moment…",
+    },
+    uk: {
+      title: "Видалити акаунт VYBE",
+      intro: "Акаунт видаляється одразу, і це не можна скасувати.",
+      removedTitle: "Що буде видалено",
+      removed1: "Твій профіль: фото, ім’я, нік і опис.",
+      removed2: "Твої публікації, коментарі та особисті плейлисти.",
+      removed3: "Вподобання, підписники, підписки, блокування та сповіщення.",
+      removed4: "Файли, які ти завантажував(ла).",
+      keptTitle: "Що залишиться",
+      kept1: "Відповіді інших людей на твої коментарі; твій коментар буде показано як видалений.",
+      kept2: "Твої фан-сторінки перейдуть до найдавнішого модератора, без модераторів — підуть в архів.",
+      kept3: "Твій нік буде зарезервовано на 30 днів: ніхто не зможе його зайняти.",
+      kept4: "Скарги на твій вміст зберігаються до 90 днів для модерації; скарги про шкоду дітям — довше.",
+      optionApp: "Спосіб 1: у застосунку",
+      appSteps: "Профіль → меню ☰ → Налаштування → «Видалити акаунт».",
+      optionWeb: "Спосіб 2: тут, поштою та паролем",
+      email: "Пошта",
+      password: "Пароль",
+      signIn: "Увійти",
+      signedInAs: "Акаунт:",
+      understand: "Я розумію, що акаунт буде видалено назавжди.",
+      deleteForever: "Видалити назавжди",
+      done: "Акаунт видалено. Можна закрити цю сторінку.",
+      optionEmail: "Спосіб 3: листом",
+      emailText: "Якщо не вдається увійти, напиши з пошти свого акаунта з темою «Видалити акаунт» на",
+      privacy: "Ця сторінка нічого не зберігає: пошта й пароль надсилаються лише VYBE, щоб підтвердити, що акаунт твій.",
+      errWrong: "Неправильна пошта або пароль.",
+      errRate: "Забагато спроб. Спробуй пізніше.",
+      errNetwork: "Немає з’єднання. Спробуй ще раз.",
+      errUnknown: "Щось пішло не так. Спробуй пізніше або напиши нам листом.",
+      errEmpty: "Введи пошту й пароль.",
+      working: "Хвилинку…",
+    },
+  };
+
+  const $ = (id) => document.getElementById(id);
+  let lang = "es";
+  let session = null; // токен и пароль живут только в памяти страницы
+
+  function pickLanguage() {
+    const asked = new URLSearchParams(location.search).get("lang");
+    if (asked && T[asked]) return asked;
+    const nav = (navigator.language || "es").toLowerCase();
+    if (nav.startsWith("uk")) return "uk";
+    if (nav.startsWith("en")) return "en";
+    return "es";
+  }
+
+  function apply(next) {
+    lang = next;
+    document.documentElement.lang = lang;
+    document.title = T[lang].title;
+    document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = T[lang][el.dataset.t]; });
+    document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+    const mail = $("mail");
+    mail.textContent = SUPPORT_EMAIL;
+    mail.href = "mailto:" + SUPPORT_EMAIL + "?subject=" + encodeURIComponent(lang === "uk" ? "Видалити акаунт" : lang === "en" ? "Delete account" : "Eliminar cuenta");
+  }
+
+  function setStatus(id, key, isError) {
+    const el = $(id);
+    el.textContent = key ? T[lang][key] : "";
+    el.classList.toggle("error", Boolean(isError));
+  }
+
+  async function post(url, headers, body) {
+    try {
+      const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body), credentials: "omit", cache: "no-store" });
+      let data = null;
+      try { data = await response.json(); } catch (_) { /* пусто */ }
+      return { status: response.status, data };
+    } catch (_) {
+      return { status: 0, data: null };
+    }
+  }
+
+  $("signin").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = $("email").value.trim();
+    const password = $("password").value;
+    if (!email || !password) { setStatus("signin-status", "errEmpty", true); return; }
+    $("signin-button").disabled = true;
+    setStatus("signin-status", "working", false);
+    const result = await post(SUPABASE_URL + "/auth/v1/token?grant_type=password",
+      { apikey: PUBLISHABLE_KEY, "Content-Type": "application/json" }, { email, password });
+    $("signin-button").disabled = false;
+    if (result.status === 200 && result.data && result.data.access_token) {
+      session = { token: result.data.access_token, password };
+      $("password").value = "";
+      $("who").textContent = email;
+      $("signin-card").hidden = true;
+      $("confirm-card").hidden = false;
+      setStatus("signin-status", null, false);
+      $("understand").focus();
+      return;
+    }
+    setStatus("signin-status", result.status === 0 ? "errNetwork" : result.status === 429 ? "errRate"
+      : (result.status === 400 || result.status === 401) ? "errWrong" : "errUnknown", true);
+  });
+
+  $("understand").addEventListener("change", () => { $("delete-button").disabled = !$("understand").checked; });
+
+  $("confirm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!session || !$("understand").checked) return;
+    $("delete-button").disabled = true;
+    setStatus("delete-status", "working", false);
+    const result = await post(SUPABASE_URL + "/functions/v1/delete-account",
+      { Authorization: "Bearer " + session.token, apikey: PUBLISHABLE_KEY, "Content-Type": "application/json" },
+      { password: session.password });
+    if (result.status === 200 && result.data && result.data.deleted === true) {
+      session = null;
+      $("confirm-card").hidden = true;
+      $("done-card").hidden = false;
+      return;
+    }
+    $("delete-button").disabled = false;
+    setStatus("delete-status", result.status === 0 ? "errNetwork" : result.status === 429 ? "errRate"
+      : result.status === 403 ? "errWrong" : "errUnknown", true);
+  });
+
+  document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => apply(b.dataset.lang)));
+  apply(pickLanguage());
+})();
+</script>
+</body>
+</html>
